@@ -1,0 +1,17 @@
+*
+!.gitignore
+!/pyChakraCore/
+!/pyChakraCore/*
+!/pyChakraCore/*/*
+!License
+!README.*
+!/*.py
+*.DS_Store
+
+# Python:
+__pycache__
+*.pyc
+*.egg
+*.egg-info
+dist
+build
