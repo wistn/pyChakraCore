@@ -2,7 +2,7 @@
 """
 Author:wistn
 since:2020-10-20
-LastEditTime:,:2020-10-20
+LastEditTime:,:2020-10-22
 LastEditors:,:Do not edit
 Description:
 """
@@ -12,7 +12,6 @@ import re
 
 from setuptools import setup, find_packages
 
-PROBLEM = "mac环境pip安装我的包后可能import失败，要复制源代码文件夹( pip show pyChakraCore 可得到所在位置)到你项目文件夹来调用"
 VERSION = "0.1.1dev0"
 PACKAGES = find_packages(
     where=".", exclude=(), include=("*",)
