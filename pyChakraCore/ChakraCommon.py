@@ -2,67 +2,13 @@
 """
 Author:wistn
 since:2020-10-10
-LastEditTime:2020-10-19
 LastEditors:Do not edit
+LastEditTime:2021-02-27
 Description:
 """
+from .ChakraCore import ChakraCore
 import ctypes
 from enum import IntEnum, auto
-
-
-class JsValueType(IntEnum):
-    # <summary>
-    #     The value is the <c>undefined</c> value.
-    # </summary>
-    JsUndefined = 0
-    # <summary>
-    #     The value is the <c>null</c> value.
-    # </summary>
-    JsNull = 1
-    # <summary>
-    #     The value is a JavaScript number value.
-    # </summary>
-    JsNumber = 2
-    # <summary>
-    #     The value is a JavaScript string value.
-    # </summary>
-    JsString = 3
-    # <summary>
-    #     The value is a JavaScript Boolean value.
-    # </summary>
-    JsBoolean = 4
-    # <summary>
-    #     The value is a JavaScript object value.
-    # </summary>
-    JsObject = 5
-    # <summary>
-    #     The value is a JavaScript function object value.
-    # </summary>
-    JsFunction = 6
-    # <summary>
-    #     The value is a JavaScript error object value.
-    # </summary>
-    JsError = 7
-    # <summary>
-    #     The value is a JavaScript array object value.
-    # </summary>
-    JsArray = 8
-    # <summary>
-    #     The value is a JavaScript symbol value.
-    # </summary>
-    JsSymbol = 9
-    # <summary>
-    #     The value is a JavaScript ArrayBuffer object value.
-    # </summary>
-    JsArrayBuffer = 10
-    # <summary>
-    #     The value is a JavaScript typed array object value.
-    # </summary>
-    JsTypedArray = 11
-    # <summary>
-    #     The value is a JavaScript DataView object value.
-    # </summary>
-    JsDataView = 12
 
 
 class JsErrorCode(IntEnum):
@@ -70,7 +16,6 @@ class JsErrorCode(IntEnum):
     #     Success error code.
     # </summary>
     JsNoError = 0
-
     # <summary>
     #     Category of errors that relates to incorrect usage of the API itself.
     # </summary>
@@ -212,7 +157,6 @@ class JsErrorCode(IntEnum):
     #     The Chakra engine failed to set the Floating Point Unit state.
     # </summary>
     JsErrorBadFPUState = auto()
-
     # <summary>
     #     Category of errors that relates to errors in a script.
     # </summary>
@@ -234,7 +178,6 @@ class JsErrorCode(IntEnum):
     #     was disabled.
     # </summary>
     JsErrorScriptEvalDisabled = auto()
-
     # <summary>
     #     Category of errors that are fatal and signify failure of the engine.
     # </summary>
@@ -247,7 +190,6 @@ class JsErrorCode(IntEnum):
     #     A hosting API was called with object created on different javascript runtime.
     # </summary>
     JsErrorWrongRuntime = auto()
-
     # <summary>
     #     Category of errors that are related to failures during diagnostic operations.
     # </summary>
@@ -278,14 +220,196 @@ class JsErrorCode(IntEnum):
     JsErrorDiagUnableToPerformAction = auto()
 
 
+class JsRuntimeAttributes(IntEnum):
+    # <summary>
+    #     No special attributes.
+    # </summary>
+    JsRuntimeAttributeNone = 0x00000000
+    # <summary>
+    #     The runtime will not do any work (such as garbage collection) on background threads.
+    # </summary>
+    JsRuntimeAttributeDisableBackgroundWork = 0x00000001
+    # <summary>
+    #     The runtime should support reliable script interruption. This increases the number of
+    #     places where the runtime will check for a script interrupt request at the cost of a
+    #     small amount of runtime performance.
+    # </summary>
+    JsRuntimeAttributeAllowScriptInterrupt = 0x00000002
+    # <summary>
+    #     Host will call <c>JsIdle</c>, so enable idle processing. Otherwise, the runtime will
+    #     manage memory slightly more aggressively.
+    # </summary>
+    JsRuntimeAttributeEnableIdleProcessing = 0x00000004
+    # <summary>
+    #     Runtime will not generate native code.
+    # </summary>
+    JsRuntimeAttributeDisableNativeCodeGeneration = 0x00000008
+    # <summary>
+    #     Using <c>eval</c> or <c>function</c> constructor will throw an exception.
+    # </summary>
+    JsRuntimeAttributeDisableEval = 0x00000010
+    # <summary>
+    #     Runtime will enable all experimental features.
+    # </summary>
+    JsRuntimeAttributeEnableExperimentalFeatures = 0x00000020
+    # <summary>
+    #     Calling <c>JsSetException</c> will also dispatch the exception to the script debugger
+    #     (if any) giving the debugger a chance to break on the exception.
+    # </summary>
+    JsRuntimeAttributeDispatchSetExceptionsToDebugger = 0x00000040
+    # <summary>
+    #     Disable Failfast fatal error on OOM
+    # </summary>
+    JsRuntimeAttributeDisableFatalOnOOM = 0x00000080
+    # <summary>
+    #     Runtime will not allocate executable code pages
+    #     This also implies that Native Code generation will be turned off
+    #     Note that this will break JavaScript stack decoding in tools
+    #      like WPA since they rely on allocation of unique thunks to
+    #      interpret each function and allocation of those thunks will be
+    #      disabled as well
+    # </summary>
+    JsRuntimeAttributeDisableExecutablePageAllocation = 0x00000100
+
+
+class JsParseScriptAttributes(IntEnum):
+    # <summary>
+    #     Default attribute
+    # </summary>
+    JsParseScriptAttributeNone = 0x0
+    # <summary>
+    #     Specified script is internal and non-user code. Hidden from debugger
+    # </summary>
+    JsParseScriptAttributeLibraryCode = 0x1
+    # <summary>
+    #     ChakraCore assumes ExternalArrayBuffer is Utf8 by default.
+    #     This one needs to be set for Utf16
+    # </summary>
+    JsParseScriptAttributeArrayBufferIsUtf16Encoded = 0x2
+
+
+class JsValueType(IntEnum):
+    # <summary>
+    #     The value is the <c>undefined</c> value.
+    # </summary>
+    JsUndefined = 0
+    # <summary>
+    #     The value is the <c>null</c> value.
+    # </summary>
+    JsNull = 1
+    # <summary>
+    #     The value is a JavaScript number value.
+    # </summary>
+    JsNumber = 2
+    # <summary>
+    #     The value is a JavaScript string value.
+    # </summary>
+    JsString = 3
+    # <summary>
+    #     The value is a JavaScript Boolean value.
+    # </summary>
+    JsBoolean = 4
+    # <summary>
+    #     The value is a JavaScript object value.
+    # </summary>
+    JsObject = 5
+    # <summary>
+    #     The value is a JavaScript function object value.
+    # </summary>
+    JsFunction = 6
+    # <summary>
+    #     The value is a JavaScript error object value.
+    # </summary>
+    JsError = 7
+    # <summary>
+    #     The value is a JavaScript array object value.
+    # </summary>
+    JsArray = 8
+    # <summary>
+    #     The value is a JavaScript symbol value.
+    # </summary>
+    JsSymbol = 9
+    # <summary>
+    #     The value is a JavaScript ArrayBuffer object value.
+    # </summary>
+    JsArrayBuffer = 10
+    # <summary>
+    #     The value is a JavaScript typed array object value.
+    # </summary>
+    JsTypedArray = 11
+    # <summary>
+    #     The value is a JavaScript DataView object value.
+    # </summary>
+    JsDataView = 12
+
+
+cfunctype_JsNativeFunction = ctypes.CFUNCTYPE(
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+    ctypes.c_bool,
+    ctypes.POINTER(ctypes.c_void_p),
+    ctypes.c_ushort,
+    # ctypes.c_void_p,
+    ctypes.py_object,
+)  # ChakraCommon.h JsNativeFunction 要求类型
+
+
+def CreatePropertyIdFromString(str, j_Id):
+    return ChakraCore.JsCreatePropertyId(
+        str.encode("UTF-8"), len(str.encode("UTF-8")), ctypes.byref(j_Id)
+    )
+
+
+def getValueType(jValue):
+    jsType = ctypes.c_int()
+    ChakraCore.JsGetValueType(jValue, ctypes.byref(jsType))
+    return JsValueType(jsType.value).name
+
+
+def jValueToNativeInt(jValue):
+    c_nativeValue = ctypes.c_int()
+    ChakraCore.JsNumberToInt(jValue, ctypes.byref(c_nativeValue))
+    return c_nativeValue.value
+
+
+def jValueToNativeStr(jValue):
+    # Convert result to String in JavaScript; redundant if script returns a String
+    jString = ctypes.c_void_p()
+    ChakraCore.JsConvertValueToString(jValue, ctypes.byref(jString))
+    cLenString = ctypes.c_size_t()
+    # Get buffer size needed for the result string
+    ChakraCore.JsCopyString(jString, ctypes.c_void_p(), 0, ctypes.byref(cLenString))
+    cBuffer = ctypes.create_string_buffer(
+        cLenString.value + 1
+    )  # buffer is big enough to store the result
+    # Get String from JsValueRef
+    ChakraCore.JsCopyString(
+        jString, ctypes.byref(cBuffer), cLenString.value + 1, ctypes.c_void_p()
+    )
+    # Set `null-ending` to the end
+    # cBufferLastByte = (ctypes.c_char * cLenString.value).from_address(
+    #     ctypes.addressof(cBuffer)
+    # )
+    # cBufferLastByte = b"\0"
+    return cBuffer.value.decode("UTF-8")
+
+
+def jGetProperty(jValue, str_propertyId):
+    j_propertyId = ctypes.c_void_p()
+    CreatePropertyIdFromString(str_propertyId, j_propertyId)
+    j_result = ctypes.c_void_p()
+    ChakraCore.JsGetProperty(jValue, j_propertyId, ctypes.byref(j_result))
+    return j_result
+
+
 def failCheck(expr):
-    def PrintException(ptrFileName, jCode):
+    def PrintException(ptr_fileName, jCode):
         try:
-            errorTypeString = JsErrorCode(jCode).name
+            nameJsErrorCode = JsErrorCode(jCode).name
         except Exception as ex:
-            errorTypeString = "Unexpected JsErrorCode"
+            nameJsErrorCode = "Unexpected JsErrorCode"
         jException = ctypes.c_void_p()
-        chakraCore.JsGetAndClearException(ctypes.byref(jException))
+        ChakraCore.JsGetAndClearException(ctypes.byref(jException))
         if jException.value:
             if (
                 jCode.name == "JsErrorScriptCompile"
@@ -294,21 +418,21 @@ def failCheck(expr):
                 errorMessage = jValueToNativeStr(jException)
                 if jCode.name == "JsErrorScriptCompile":
                     jId = ctypes.c_void_p()
-                    chakraCore.JsCreatePropertyId(
+                    ChakraCore.JsCreatePropertyId(
                         "line".encode("UTF-8"),
                         len("line".encode("UTF-8")),
                         ctypes.byref(jId),
                     )
                     jLine = ctypes.c_void_p()
-                    chakraCore.JsGetProperty(jException, jId, ctypes.byref(jLine))
+                    ChakraCore.JsGetProperty(jException, jId, ctypes.byref(jLine))
                     jId = ctypes.c_void_p()
-                    chakraCore.JsCreatePropertyId(
+                    ChakraCore.JsCreatePropertyId(
                         "column".encode("UTF-8"),
                         len("column".encode("UTF-8")),
                         ctypes.byref(jId),
                     )
                     jColumn = ctypes.c_void_p()
-                    chakraCore.JsGetProperty(jException, jId, ctypes.byref(jColumn))
+                    ChakraCore.JsGetProperty(jException, jId, ctypes.byref(jColumn))
                     print(
                         "{}\n\tat code ('':{}:{})".format(
                             errorMessage,
@@ -318,29 +442,31 @@ def failCheck(expr):
                     )
                 else:
                     jId = ctypes.c_void_p()
-                    chakraCore.JsCreatePropertyId(
+                    ChakraCore.JsCreatePropertyId(
                         "stack".encode("UTF-8"),
                         len("stack".encode("UTF-8")),
                         ctypes.byref(jId),
                     )
                     jStack = ctypes.c_void_p()
-                    chakraCore.JsGetProperty(jException, jId, ctypes.byref(jStack))
-                    jsType = ctypes.c_int()
-                    errorCode = chakraCore.JsGetValueType(jStack, ctypes.byref(jsType))
-                    if errorCode != 0 or jsType.value == 0:
+                    ChakraCore.JsGetProperty(jException, jId, ctypes.byref(jStack))
+                    valueType = ctypes.c_int()
+                    errorCode = ChakraCore.JsGetValueType(
+                        jStack, ctypes.byref(valueType)
+                    )
+                    if errorCode != 0 or valueType.value == 0:
                         fName = (
-                            ptrFileName.value
-                            if ptrFileName.value != None
+                            ptr_fileName.value
+                            if ptr_fileName.value != None
                             else "(unknown)"
                         )
                         jId = ctypes.c_void_p()
-                        chakraCore.JsCreatePropertyId(
+                        ChakraCore.JsCreatePropertyId(
                             "source".encode("UTF-8"),
                             len("source".encode("UTF-8")),
                             ctypes.byref(jId),
                         )
                         jSource = ctypes.c_void_p()
-                        chakraCore.JsGetProperty(jException, jId, ctypes.byref(jSource))
+                        ChakraCore.JsGetProperty(jException, jId, ctypes.byref(jSource))
                         scriptSource = jValueToNativeStr(jSource)
                         print("thrown at {}:\n^".format(fName))
                         print(
@@ -351,19 +477,19 @@ def failCheck(expr):
                     else:
                         print(jValueToNativeStr(jStack))
             else:
-                print(errorTypeString)
+                print(nameJsErrorCode)
             return True
         else:
-            print(errorTypeString)
+            print(nameJsErrorCode)
         return False
 
     try:
         jCode = JsErrorCode(expr)
-    except Exception as ex:
+    except Exception:
         jCode = IntEnum("unknownJsErrorCode", {"(unknown)": expr})(expr)
     if jCode != JsErrorCode.JsNoError:
         hasException = ctypes.c_bool()
-        chakraCore.JsHasException(ctypes.byref(hasException))
+        ChakraCore.JsHasException(ctypes.byref(hasException))
         if hasException.value:
             PrintException(ctypes.c_wchar_p(None), JsErrorCode.JsErrorScriptException)
         raise Exception(
@@ -371,34 +497,4 @@ def failCheck(expr):
                 str(expr), jCode.value, jCode.name
             )
         )
-    return jCode
-
-
-# def IfJsrtErrorFailLogAndRetFalse(expr):
-#     failCheck(expr)
-#     return False
-
-
-def jValueToNativeStr(jValue):
-    jString = ctypes.c_void_p()
-    chakraCore.JsConvertValueToString(jValue, ctypes.byref(jString))
-    cLenString = ctypes.c_size_t()
-    chakraCore.JsCopyString(jString, ctypes.c_void_p(), 0, ctypes.byref(cLenString))
-    cBuffer = ctypes.create_string_buffer(cLenString.value + 1)
-    chakraCore.JsCopyString(
-        jString, ctypes.byref(cBuffer), cLenString.value + 1, ctypes.c_void_p()
-    )
-    cBufferLastByte = (ctypes.c_char * cLenString.value).from_address(
-        ctypes.addressof(cBuffer)
-    )
-    cBufferLastByte = b"\0"
-    return cBuffer.value.decode("UTF-8")
-
-
-def jValueToNativeInt(jValue):
-    jNum = ctypes.c_int()
-    chakraCore.JsNumberToInt(jNum, ctypes.byref(jValue))
-    return jNum.value
-
-
-from pyChakraCore.__init__ import chakraCore
+    return jCode.value
