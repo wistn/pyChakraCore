@@ -1,0 +1,79 @@
+#
+# Author:wistn
+# since:2021-03-11
+# LastEditors:Do not edit
+# LastEditTime:2021-03-16
+# Description: github release and Python Package
+#
+
+on:
+    workflow_dispatch:
+    push:
+        tags: ['*']
+jobs:
+    release_and_publish:
+        name: release and publish
+        strategy:
+            matrix:
+                include:
+                    - os: ubuntu-latest
+                      python-version: '3.x'
+                    # - os: macos-latest
+                    #   python-version: '3.x'
+                    # - os: windows-latest
+                    #   architecture: 'x64'
+                    #   python-version: '3.x'
+                    # - os: windows-latest
+                    #   architecture: 'x86'
+                    #   python-version: '3.x'
+        runs-on: ${{ matrix.os }}
+        steps:
+            - uses: actions/checkout@v2
+            - name: if matrix.os != 'windows-latest'
+              if: ${{ matrix.os != 'windows-latest' }}
+              uses: actions/setup-python@v2
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: if matrix.os == 'windows-latest'
+              if: ${{ matrix.os == 'windows-latest' }}
+              uses: actions/setup-python@v2
+              with:
+                  architecture: ${{ matrix.architecture }}
+                  python-version: ${{ matrix.python-version }}
+            - name: build_test_and_new_section
+              id: id_build
+              run: |
+                  python -m pip install --upgrade pip
+                  python -m pip install -r requirements.txt
+                  python runtests.py
+                  python .github/workflows/changelog_new_section.py
+                  echo "::set-output name=v_tag::v$(cat version)"
+              # python -c "import sys; print(sys.version)"
+              # which python
+            - name: package_on_linux
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+              run: |
+                  python -m pip install setuptools wheel twine
+                  python setup.py sdist --formats=gztar,zip bdist_wheel
+            - name: release_on_linux
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+              uses:
+                  softprops/action-gh-release@v1
+                  # if: startsWith(github.ref, 'refs/tags/')
+              with:
+                  body_path: new_section
+                  tag_name: ${{ steps.id_build.outputs.v_tag }}
+                  files: |
+                      dist/*
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: publish_on_linux
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+              env:
+                  TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+                  TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+              run: |
+                  twine upload --username __token__ --password ${{ secrets.PYPI_TOKEN }} dist/*.whl --verbose
+                  twine upload --username __token__ --password ${{ secrets.PYPI_TOKEN }} dist/*.zip --verbose
+
+# upload zip/gztar at last in case it failure, and only can upload one format of sdist so choose *.zip

@@ -3,7 +3,7 @@
 Author:wistn
 since:2020-10-10
 LastEditors:Do not edit
-LastEditTime:2021-02-27
+LastEditTime:2021-03-16
 Description:
 """
 from .ChakraCore import ChakraCore
@@ -394,12 +394,24 @@ def jValueToNativeStr(jValue):
     return cBuffer.value.decode("UTF-8")
 
 
-def jGetProperty(jValue, str_propertyId):
-    j_propertyId = ctypes.c_void_p()
-    CreatePropertyIdFromString(str_propertyId, j_propertyId)
+def getPropertyIdFromName(name):
     j_result = ctypes.c_void_p()
-    ChakraCore.JsGetProperty(jValue, j_propertyId, ctypes.byref(j_result))
+    ChakraCore.JsGetPropertyIdFromName(name, ctypes.byref(j_result))
     return j_result
+
+
+def jGetProperty(jObj, str_propertyId):
+    j_result = ctypes.c_void_p()
+    ChakraCore.JsGetProperty(
+        jObj, getPropertyIdFromName(str_propertyId), ctypes.byref(j_result)
+    )
+    return j_result
+
+
+def jSetProperty(jObj, str_propertyId, jValue, useStrictRules=True):
+    return ChakraCore.JsSetProperty(
+        jObj, getPropertyIdFromName(str_propertyId), jValue, useStrictRules
+    )
 
 
 def failCheck(expr):

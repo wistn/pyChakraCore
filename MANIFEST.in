@@ -1,0 +1,15 @@
+# https://packaging.python.org/guides/using-manifest-in/
+include README.md
+include LICENSE
+include MANIFEST.in
+include pyproject.toml
+include requirements.txt
+include runtests.py
+include setup.py
+
+# Add all files (mean pattern/**) under directories matching dir-pattern # graft project_name
+
+# ignore it under each dir
+global-exclude .DS_Store
+global-exclude __pycache__
+global-exclude *.pyc

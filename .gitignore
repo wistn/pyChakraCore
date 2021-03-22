@@ -1,17 +1,28 @@
 *
-!.gitignore
+!/.github/
+!/.github/**
+!/README.md
+!/MANIFEST.in
+!/pyproject.toml
+!/requirements.txt
+!/runtests.py
+!/setup.py
 !/pyChakraCore/
-!/pyChakraCore/*
-!/pyChakraCore/*/*
-!License
-!README.*
-!/*.py
-*.DS_Store
+!/pyChakraCore/**
 
-# Python:
+# keep it under each dir
+!.gitignore
+!CHANGELOG.md
+!LICENSE
+!README_CN.*
+!README_EN.*
+# ignore it under each dir
+.DS_Store
 __pycache__
 *.pyc
 *.egg
 *.egg-info
-dist
-build
+# ignore it under this dir
+/dist
+/build
+/CHANGELOG.md

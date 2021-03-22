@@ -3,7 +3,7 @@
 Author:wistn
 since:2020-12-20
 LastEditors:Do not edit
-LastEditTime:2021-02-27
+LastEditTime:2021-03-15
 Description:
 """
 
@@ -11,13 +11,7 @@ import ctypes
 import os
 import sys
 import platform
-
-
-def JsGetPropertyIdFromName(name, ptr_propertyId):
-    return ChakraCore.JsCreatePropertyId(
-        name.encode("UTF-8"), len(name.encode("UTF-8")), ptr_propertyId
-    )
-
+import types
 
 if sys.platform == "darwin":
     pathChakraCore = os.path.join(
@@ -46,7 +40,16 @@ if sys.platform != "win32":
     ChakraCore.DllMain(0, 1, 0)  # Attach process
     ChakraCore.DllMain(0, 2, 0)  # Attach main thread
 
-ChakraCore.JsGetPropertyIdFromName = JsGetPropertyIdFromName
+
+def JsGetPropertyIdFromName(self, name, ptr_propertyId):
+    return ChakraCore.JsCreatePropertyId(
+        name.encode("UTF-8"), len(name.encode("UTF-8")), ptr_propertyId
+    )
+
+
+ChakraCore.JsGetPropertyIdFromName = types.MethodType(
+    JsGetPropertyIdFromName, ChakraCore
+)
 
 
 def JS_INVALID_REFERENCE():

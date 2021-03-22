@@ -3,7 +3,7 @@
 Author:wistn
 since:2020-08-03
 LastEditors:Do not edit
-LastEditTime:2021-02-28
+LastEditTime:2021-03-16
 Description:
 """
 from .ChakraCore import *
@@ -178,17 +178,12 @@ class pyChakraCore:
         # Now set the current execution context.
         self.jGlobal = ctypes.c_void_p()
         ChakraCore.JsGetGlobalObject(ctypes.byref(self.jGlobal))
-        j_Id = ctypes.c_void_p()
-        ChakraCore.JsCreatePropertyId(
-            "WebAssembly".encode("UTF-8"),
-            len("WebAssembly".encode("UTF-8")),
-            ctypes.byref(j_Id),
-        )
         # 避免展开WebAssembly对象时失败，所以直接删除对象。
-        failCheck(
-            ChakraCore.JsDeleteProperty(
-                self.jGlobal, j_Id, False, ctypes.byref(ctypes.c_void_p())
-            )
+        ChakraCore.JsDeleteProperty(
+            self.jGlobal,
+            pyChakraCore.getPropertyIdFromName("WebAssembly"),
+            False,
+            ctypes.byref(ctypes.c_void_p()),
         )
         self.jUndefined = ctypes.c_void_p()
         ChakraCore.JsGetUndefinedValue(ctypes.byref(self.jUndefined))
@@ -203,7 +198,7 @@ class pyChakraCore:
     def run(self, code):
         j_result = self.getJValue(code)
         self.j_sourceContext += 1
-        return jValueToNativeStr(j_result)
+        return pyChakraCore.jValueToNativeStr(j_result)
 
     def getJValue(self, code):
         ChakraCore.JsSetCurrentContext(self.context)
@@ -240,44 +235,31 @@ class pyChakraCore:
         j_result = self._callFunctionWithJArgs(
             "JSON.stringify", (ctypes.c_void_p * 2)(self.jUndefined, jValue),
         )
-        strJSON = jValueToNativeStr(j_result)
+        strJSON = pyChakraCore.jValueToNativeStr(j_result)
         return strJSON
 
     def _jValueToPretty(self, jValue):
         j_result = self._callFunctionWithJArgs(
             "pretty", (ctypes.c_void_p * 2)(self.jUndefined, jValue),
         )
-        return jValueToNativeStr(j_result)
+        return pyChakraCore.jValueToNativeStr(j_result)
 
-    def callFunction(self, funName, *py_arguments):
-        ChakraCore.JsSetCurrentContext(self.context)
-        j_arguments = (ctypes.c_void_p * (len(py_arguments) + 1))(self.jUndefined)
-        for i in range(len(py_arguments)):
-            j_arguments[i + 1] = self.getJValue(repr(py_arguments[i]))
-        j_result = self._callFunctionWithJArgs(funName, j_arguments)
-        return jValueToNativeStr(j_result)
+    def callFunction(self, funName, *code_arguments):
+        argsArray_code = "[" + ",".join(code_arguments) + "]"
+        return self.run(funName + "(..." + argsArray_code + ")")
+        # Do not use func.apply because not know the value of this provided for the call to func
 
     def _callFunctionWithJArgs(self, funName, j_arguments):
-        ChakraCore.JsSetCurrentContext(self.context)
         j_result = ctypes.c_void_p()
         jFunction = self.getJValue(funName)
-
         # 或者global.funName调用
         # j_result = ctypes.c_void_p()
-        # funNameComponents = funName.split(".")
-        # jId = ctypes.c_void_p()
+        # components = funName.split(".")
         # jObj = self.jGlobal
-        # jValue = ctypes.c_void_p()
-        # for i in range(len(funNameComponents)):
-        #     ChakraCore.JsCreatePropertyId(
-        #         funNameComponents[i].encode("UTF-8"),
-        #         len(funNameComponents[i].encode("UTF-8")),
-        #         ctypes.byref(jId),
-        #     )
-        #     ChakraCore.JsGetProperty(jObj, jId, ctypes.byref(jValue))
+        # for i in range(len(components)):
+        #     jValue = pyChakraCore.jGetProperty(jObj, components[i])
         #     jObj = jValue
         # jFunction = jValue
-
         failCheck(
             ChakraCore.JsCallFunction(
                 jFunction,
@@ -288,53 +270,47 @@ class pyChakraCore:
         )
         return j_result
 
-    def callFunctionToJson(self, funName, *py_arguments):
-        # jsonArgs = json.dumps(py_arguments)
-        # return self.run(
-        #     "JSON.stringify("
-        #     + """{0}(...JSON.parse({1}))""".format(funName, repr(jsonArgs))
-        #     + ")"
-        # )
-        ChakraCore.JsSetCurrentContext(self.context)
-        j_arguments = (ctypes.c_void_p * (len(py_arguments) + 1))(self.jUndefined)
-        for i in range(len(py_arguments)):
-            j_arguments[i + 1] = self.getJValue(repr(py_arguments[i]))
-        try:
-            j_result = self._callFunctionWithJArgs(funName, j_arguments)
-        except Exception as ex:
-            raise ex
-        return self._jValueToJson(j_result)
+    def _callConstructorWithJArgs(self, funName, j_arguments):
+        j_result = ctypes.c_void_p()
+        funName = funName.strip()
+        if "new " in funName:
+            funName = funName[4:].strip()
+        jFunction = self.getJValue(funName)
+        failCheck(
+            ChakraCore.JsConstructObject(
+                jFunction,
+                ctypes.byref(j_arguments),
+                len(j_arguments),
+                ctypes.byref(j_result),
+            )
+        )
+        return j_result
+
+    def callFunctionToJson(self, funName, *code_arguments):
+        argsArray_code = "[" + ",".join(code_arguments) + "]"
+        strJSON = self.run("JSON.stringify(" + funName + "(..." + argsArray_code + "))")
+        return strJSON
 
     def registerMethod(
         self, nativeFunction, funName, callbackState=ctypes.py_object(None)
     ):
+        ChakraCore.JsSetCurrentContext(self.context)
         jFunction = ctypes.c_void_p()
         ChakraCore.JsCreateFunction(
             nativeFunction, callbackState, ctypes.byref(jFunction),
         )  # 匿名函数
-        funNameComponents = funName.split(".")
-        jId = ctypes.c_void_p()
+        components = funName.split(".")
         jObj = self.jGlobal
-        jValue = ctypes.c_void_p()
-        for component in funNameComponents[0:-1]:
-            ChakraCore.JsCreatePropertyId(
-                component.encode("UTF-8"),
-                len(component.encode("UTF-8")),
-                ctypes.byref(jId),
-            )
-            ChakraCore.JsGetProperty(jObj, jId, ctypes.byref(jValue))
-            if getValueType(jValue) == "JsUndefined":
+        for i in range(len(components)):
+            if i == len(components) - 1:
+                pyChakraCore.jSetProperty(jObj, components[i], jFunction, True)
+                break
+            jValue = pyChakraCore.jGetProperty(jObj, components[i])
+            if pyChakraCore.getValueType(jValue) == "JsUndefined":
                 jValue = ctypes.c_void_p()
                 ChakraCore.JsCreateObject(ctypes.byref(jValue))
-                ChakraCore.JsSetProperty(jObj, jId, jValue, True)
+                pyChakraCore.jSetProperty(jObj, components[i], jValue, True)
             jObj = jValue
-        jValue = jFunction
-        ChakraCore.JsCreatePropertyId(
-            funNameComponents[-1].encode("UTF-8"),
-            len(funNameComponents[-1].encode("UTF-8")),
-            ctypes.byref(jId),
-        )
-        ChakraCore.JsSetProperty(jObj, jId, jValue, True)
 
     def EchoCallback(
         self, ptr_callee, isConstructCall, ptrj_arguments, argumentCount, callbackState,
@@ -342,7 +318,7 @@ class pyChakraCore:
         # chakraCore虚拟机里，注册方法第一个参数都是undefined。当其他参数出现not defined 时，不会进入本原生函数，而是JsRun返回空字符串''回调用处。
         for i in range(1, argumentCount):
             jString = ctypes.c_void_p(ptrj_arguments[i])
-            string = jValueToNativeStr(jString)
+            string = pyChakraCore.jValueToNativeStr(jString)
             if i > 1:
                 print(" ", end="")
             print(string, end="")
@@ -350,9 +326,10 @@ class pyChakraCore:
         # return self.jUndefined.value
 
 
-pyChakraCore.CreatePropertyIdFromString = staticmethod(CreatePropertyIdFromString)
 pyChakraCore.getValueType = staticmethod(getValueType)
 pyChakraCore.jValueToNativeInt = staticmethod(jValueToNativeInt)
 pyChakraCore.jValueToNativeStr = staticmethod(jValueToNativeStr)
+pyChakraCore.getPropertyIdFromName = staticmethod(getPropertyIdFromName)
 pyChakraCore.jGetProperty = staticmethod(jGetProperty)
+pyChakraCore.jSetProperty = staticmethod(jSetProperty)
 
