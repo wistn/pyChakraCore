@@ -111,10 +111,10 @@ run: typeof 1 is number
 
 ## Configuration
 
--   Dependent libraries .dll/.so/.dylib files which [ChakraCore](https://github.com/chakra-core/ChakraCore) v1.11.20 releases, save in windowsx86/windowsx64/linux/osx folders under project directory.
+-   Dependent libraries .dll/.so/.dylib files which [ChakraCore](https://github.com/chakra-core/ChakraCore) v1.11.20 releases, save in windowsx86/windowsx64/linux/osx folders beside this README_EN file.
 
 ---
 
 ## Dependencies
 
--   [python](https://www.python.org/) 3.4 or above
+-   [python](https://www.python.org/) 3.6 or above

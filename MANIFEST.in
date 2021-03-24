@@ -1,8 +1,8 @@
 # https://packaging.python.org/guides/using-manifest-in/
-include README.md
 include LICENSE
 include MANIFEST.in
 include pyproject.toml
+include README.md
 include requirements.txt
 include runtests.py
 include setup.py

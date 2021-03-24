@@ -111,10 +111,10 @@ run: typeof 1 is number
 
 ## 配置
 
--   项目文件夹下 windowsx86/windowsx64/linux/osx 文件夹里存放依赖库，即 [ChakraCore](https://github.com/chakra-core/ChakraCore) （版本1.11.20）发布的 .dll/.so/.dylib 文件
+-   本 README_CN 文件旁边的 windowsx86/windowsx64/linux/osx 文件夹里存放依赖库，即 [ChakraCore](https://github.com/chakra-core/ChakraCore) （版本1.11.20）发布的 .dll/.so/.dylib 文件
 
 ---
 
 ## 依赖
 
--   [python](https://www.python.org/) 3.4 或以上
+-   [python](https://www.python.org/) 3.6 或以上

@@ -18,15 +18,17 @@ jobs:
                 include:
                     - os: ubuntu-latest
                       python-version: '3.x'
-                    # - os: macos-latest
-                    #   python-version: '3.x'
-                    # - os: windows-latest
-                    #   architecture: 'x64'
-                    #   python-version: '3.x'
-                    # - os: windows-latest
-                    #   architecture: 'x86'
-                    #   python-version: '3.x'
+                    - os: macos-latest
+                      python-version: '3.x'
+                    - os: windows-latest
+                      architecture: 'x64'
+                      python-version: '3.x'
+                    - os: windows-latest
+                      architecture: 'x86'
+                      python-version: '3.x'
         runs-on: ${{ matrix.os }}
+        env:
+            PYTHONIOENCODING: utf-8
         steps:
             - uses: actions/checkout@v2
             - name: if matrix.os != 'windows-latest'
@@ -48,8 +50,7 @@ jobs:
                   python runtests.py
                   python .github/workflows/changelog_new_section.py
                   echo "::set-output name=v_tag::v$(cat version)"
-              # python -c "import sys; print(sys.version)"
-              # which python
+              # python -c "import sys; print(sys.version); from pyChakraCore.test import main; main()"
             - name: package_on_linux
               if: ${{ matrix.os == 'ubuntu-latest' }}
               run: |
@@ -73,7 +74,7 @@ jobs:
                   TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
                   TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
               run: |
-                  twine upload --username __token__ --password ${{ secrets.PYPI_TOKEN }} dist/*.whl --verbose
-                  twine upload --username __token__ --password ${{ secrets.PYPI_TOKEN }} dist/*.zip --verbose
+                  twine upload --username __token__ --password ${{ secrets.PYPI_TOKEN }} dist/*.whl #--verbose
+                  twine upload --username __token__ --password ${{ secrets.PYPI_TOKEN }} dist/*.zip #--verbose
 
 # upload zip/gztar at last in case it failure, and only can upload one format of sdist so choose *.zip

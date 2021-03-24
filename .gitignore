@@ -26,3 +26,5 @@ __pycache__
 /dist
 /build
 /CHANGELOG.md
+
+# notice: MANIFEST.in contorls file adding for sdist. Setup.py[package_data] contorls file adding for bdist_wheel,and must set include_package_data=False
